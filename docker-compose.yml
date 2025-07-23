@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.24-community  # Use the latest Neo4j Community Edition
+    container_name: neo4j_employee_hierarchy
+    environment:
+      - NEO4J_AUTH=neo4j/your_password_here  # Set username/password (change password as needed)
+      - NEO4J_dbms_memory_pagecache_size=512M  # Adjust memory for performance
+      - NEO4J_dbms_memory_heap_initial__size=512M
+      - NEO4J_dbms_memory_heap_max__size=1G
+    ports:
+      - "7474:7474"  # Neo4j Browser
+      - "7687:7687"  # Bolt protocol for Python driver
+    volumes:
+      - neo4j_data:/data  # Persist database data
+      - ./employee_hierarchy_neo4j.py:/app/employee_hierarchy_neo4j.py  # Mount Python script
+    networks:
+      - neo4j_network
+
+  data-loader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - neo4j
+    environment:
+      - NEO4J_URI=neo4j://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=your_password_here  # Match NEO4J_AUTH password
+    volumes:
+      - ./employee_hierarchy_neo4j.py:/app/employee_hierarchy_neo4j.py
+    networks:
+      - neo4j_network
+
+volumes:
+  neo4j_data:
+
+networks:
+  neo4j_network:
+    driver: bridge
